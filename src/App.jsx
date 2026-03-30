@@ -12,31 +12,17 @@ export default function App() {
   const [status, setStatus] = useState('loading');
   const [progress, setProgress] = useState('데이터 로딩 중...');
   const [data, setData] = useState(null);
-  const [detailReady, setDetailReady] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [cosIngTarget, setCosIngTarget] = useState(null);
+  const [cosIngTarget, setCosIngTarget] = useState(null);  // null=닫힘, false=없음, obj=데이터
   const [japanTarget, setJapanTarget] = useState(null);
   const [matTarget, setMatTarget] = useState(null);
 
   useEffect(() => {
-    loadAllData(
-      setProgress,
-      // Phase 2 완료 콜백
-      (fullData) => {
-        setData(fullData);
-        setDetailReady(true);
-      }
-    )
-      .then(d => {
-        setData(d);
-        setStatus('ready');   // Phase 1 완료 → 검색 활성화
-      })
-      .catch(e => {
-        setStatus('error');
-        setProgress(e.message);
-      });
+    loadAllData(setProgress)
+      .then(d => { setData(d); setStatus('ready'); })
+      .catch(e => { setStatus('error'); setProgress(e.message); });
   }, []);
 
   useEffect(() => {
@@ -56,17 +42,15 @@ export default function App() {
 
   const openCosIng = useCallback((inciName) => {
     if (!inciName || inciName === '-' || !data) return;
-    if (!detailReady) { setCosIngTarget(false); return; }  // 아직 로딩 중
     const d = data.cosingMap[inciName.trim().toUpperCase()];
     setCosIngTarget(d || false);
-  }, [data, detailReady]);
+  }, [data]);
 
   const openJapan = useCallback((jpName) => {
     if (!jpName || jpName === '-' || !data) return;
-    if (!detailReady) { setJapanTarget(false); return; }   // 아직 로딩 중
     const d = data.japanMap[jpName.trim()];
     setJapanTarget(d || false);
-  }, [data, detailReady]);
+  }, [data]);
 
   const getReglRows = useCallback((kor) => {
     if (!data || !kor) return [];
@@ -86,12 +70,7 @@ export default function App() {
           <SearchBar value={query} onChange={setQuery} disabled={status !== 'ready'} />
           <div className="status-bar">
             {status === 'loading' && <span className="status-loading">⏳ {progress}</span>}
-            {status === 'ready' && !query && (
-              <span className="status-ready">
-                ✅ {data.index.length.toLocaleString()}개 성분 로드 완료
-                {!detailReady && <span style={{color:'#888', marginLeft:8, fontSize:12}}>상세정보 로딩 중…</span>}
-              </span>
-            )}
+            {status === 'ready' && !query && <span className="status-ready">✅ {data.index.length.toLocaleString()}개 성분 로드 완료</span>}
             {status === 'ready' && query && results.length > 0 && <span className="status-count">총 {results.length}건</span>}
             {status === 'ready' && query && results.length === 0 && <span className="status-empty">검색 결과가 없습니다.</span>}
             {status === 'error' && <span className="status-error">❌ 로드 실패: {progress}</span>}

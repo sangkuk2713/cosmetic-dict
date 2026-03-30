@@ -80,8 +80,8 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
             </div>
           )}
 
-          {/* 관련 원료 */}
-          {matRows && matRows.length > 0 && (
+          {/* 관련 원료 - 환경변수로 표시 여부 제어 */}
+          {process.env.REACT_APP_SHOW_MAT !== 'false' && matRows && matRows.length > 0 && (
             <div className="detail-section">
               <div className="section-title">관련 원료</div>
               <div className="mat-list">

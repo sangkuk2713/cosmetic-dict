@@ -6,7 +6,6 @@ const SHEET_GID = {
   Japan:          '373145437',
   사용제한성분:   '206448184',
   원료정보:       '807032163',
-  공급사정보:     '1703849239',
   AnnexII:        '2116139856',
   AnnexIII:       '362214914',
   AnnexIV:        '36412469',
@@ -24,6 +23,7 @@ function csvUrl(gid) {
   return `https://docs.google.com/spreadsheets/d/${SS_ID}/export?format=csv&gid=${gid}`;
 }
 
+// 멀티라인 셀 완전 지원 CSV 파서
 function parseCSV(text) {
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -148,74 +148,45 @@ function lookupAnnex(annexNum, refNo, annexData) {
   return null;
 }
 
-// ── 빌드 헬퍼 ────────────────────────────────────────────────
-function buildIndex(inciRaw) {
-  const index = [];
-  for (let i = 1; i < inciRaw.length; i++) {
-    const r = inciRaw[i];
-    const kor = (r[0]||'').trim();
-    if (!kor) continue;
-    index.push({
-      kor, eng:r[1]||'', old:r[2]||'', eu:r[3]||'', cn:r[4]||'',
-      jp:r[5]||'', cas:r[6]||'', ec:r[7]||'', unii:r[8]||'',
-      origin:r[9]||'', formula:r[10]||'', func:r[11]||'',
-      regType:r[12]||'', regName:r[13]||'', regNote:r[14]||'',
-      history:r[15]||'', ewg:r[16]||'', ewgData:r[17]||'',
-    });
-  }
-  return index;
-}
+// ── 전체 데이터 로드 ─────────────────────────────────────────
+export async function loadAllData(onProgress) {
+  const prog = msg => onProgress && onProgress(msg);
+  prog('성분 데이터 로딩 중...');
 
-function buildReglMap(reglRaw) {
-  const reglMap = {};
-  for (let j = 1; j < reglRaw.length; j++) {
-    const r = reglRaw[j];
-    const kor = (r[0]||'').trim();
-    if (!kor) continue;
-    if (!reglMap[kor]) reglMap[kor] = [];
-    reglMap[kor].push({
-      regType:r[4]||'', country:r[5]||'',
-      noticeName:r[6]||'', provis:r[7]||'', limitCond:r[8]||'',
-    });
-  }
-  return reglMap;
-}
+  // 전부 병렬 로딩
+  const [
+    inciRaw, cosingRaw, japanRaw, reglRaw, matRaw,
+    annexII, annexIII, annexIV, annexV, annexVI,
+    b1, b2, b31, b32, b41, b42
+  ] = await Promise.all([
+    fetchSheet('INCI_Dict'),
+    fetchSheet('CosIng'),
+    fetchSheet('Japan'),
+    fetchSheet('사용제한성분'),
+    fetchSheet('원료정보'),
+    fetchSheet('AnnexII'),
+    fetchSheet('AnnexIII'),
+    fetchSheet('AnnexIV'),
+    fetchSheet('AnnexV'),
+    fetchSheet('AnnexVI'),
+    fetchSheet('別表第1'),
+    fetchSheet('別表第2'),
+    fetchSheet('別表第3-1'),
+    fetchSheet('別表第3-2'),
+    fetchSheet('別表第4-1'),
+    fetchSheet('別表第4-2'),
+  ]);
 
-function buildSupplierMap(supplierRaw) {
-  const supplierMap = {};
-  for (let s = 1; s < supplierRaw.length; s++) {
-    const r = supplierRaw[s];
-    const name = (r[0]||'').trim();
-    if (!name) continue;
-    supplierMap[name] = { manager:r[1]||'', tel:r[2]||'', email:r[3]||'' };
-  }
-  return supplierMap;
-}
+  prog('데이터 처리 중...');
 
-function buildMatMap(matRaw, supplierMap) {
-  const matMap = {};
-  for (let k = 1; k < matRaw.length; k++) {
-    const r = matRaw[k];
-    const comp = (r[1]||'').trim();
-    if (!comp) continue;
-    const supplierName = (r[3]||'').trim();
-    const sup = supplierMap[supplierName] || {};
-    const matObj = {
-      productName:r[0]||'', composition:comp,
-      maker:r[2]||'', supplier:supplierName,
-      manager:sup.manager||'', tel:sup.tel||'', email:sup.email||'',
-    };
-    comp.split(/;\s*/).forEach(ing => {
-      ing = ing.trim();
-      if (!ing) return;
-      if (!matMap[ing]) matMap[ing] = [];
-      matMap[ing].push(matObj);
-    });
-  }
-  return matMap;
-}
+  const euAnnexData = { AnnexII:annexII, AnnexIII:annexIII, AnnexIV:annexIV, AnnexV:annexV, AnnexVI:annexVI };
+  const jpAnnexData = {
+    '別表第1':b1, '別表第2':b2,
+    '別表第3-1':b31, '別表第3-2':b32,
+    '別表第4-1':b41, '別表第4-2':b42,
+  };
 
-function buildCosingMap(cosingRaw, euAnnexData) {
+  // ── CosIng Map ──────────────────────────────────────────────
   const cosingMap = {};
   for (let i = 1; i < cosingRaw.length; i++) {
     const r = cosingRaw[i];
@@ -240,10 +211,8 @@ function buildCosingMap(cosingRaw, euAnnexData) {
     if (key1) cosingMap[key1] = obj;
     if (key2 && key2 !== key1) cosingMap[key2] = obj;
   }
-  return cosingMap;
-}
 
-function buildJapanMap(japanRaw, jpAnnexData) {
+  // ── Japan Map ───────────────────────────────────────────────
   const japanMap = {};
   for (let i = 1; i < japanRaw.length; i++) {
     const r = japanRaw[i];
@@ -257,70 +226,72 @@ function buildJapanMap(japanRaw, jpAnnexData) {
       annexRows: getJapanAnnexRows(regClass, jpAnnexData),
     };
   }
-  return japanMap;
-}
 
-// ── 메인 로드 함수 ───────────────────────────────────────────
-// onProgress  : 상태 메시지 콜백
-// onDetailReady : Phase 2 완료 시 전체 data 객체 전달 콜백
-export async function loadAllData(onProgress, onDetailReady) {
-  const prog = msg => onProgress && onProgress(msg);
+  // ── 규제정보 Map (사용제한성분 탭) ─────────────────────────
+  // 헤더: 국문명(0)...규제유형(4), 국가명(5), 고시원료명(6), 단서조항(7), 제한사항(8)
+  const reglMap = {};
+  for (let j = 1; j < reglRaw.length; j++) {
+    const r = reglRaw[j];
+    const kor = (r[0]||'').trim();
+    if (!kor) continue;
+    if (!reglMap[kor]) reglMap[kor] = [];
+    reglMap[kor].push({
+      regType:    r[4]||'',
+      country:    r[5]||'',
+      noticeName: r[6]||'',
+      provis:     r[7]||'',
+      limitCond:  r[8]||'',
+    });
+  }
 
-  // ── Phase 1: 검색에 필요한 핵심 4개 시트 (검색 즉시 활성화) ──
-  prog('성분 데이터 로딩 중...');
-  const [inciRaw, reglRaw, matRaw, supplierRaw] = await Promise.all([
-    fetchSheet('INCI_Dict'),
-    fetchSheet('사용제한성분'),
-    fetchSheet('원료정보'),
-    fetchSheet('공급사정보'),
-  ]);
-
-  const supplierMap = buildSupplierMap(supplierRaw);
-  const phase1 = {
-    index:       buildIndex(inciRaw),
-    reglMap:     buildReglMap(reglRaw),
-    matMap:      buildMatMap(matRaw, supplierMap),
-    cosingMap:   {},     // Phase 2 완료 전 빈 상태 (유럽팝업: "로딩 중")
-    japanMap:    {},     // Phase 2 완료 전 빈 상태 (일본팝업: "로딩 중")
-    detailReady: false,
-  };
-
-  // ── Phase 2: 상세 팝업용 13개 시트 (백그라운드, await 없음) ──
-  Promise.all([
-    fetchSheet('CosIng'),
-    fetchSheet('Japan'),
-    fetchSheet('AnnexII'),
-    fetchSheet('AnnexIII'),
-    fetchSheet('AnnexIV'),
-    fetchSheet('AnnexV'),
-    fetchSheet('AnnexVI'),
-    fetchSheet('別表第1'),
-    fetchSheet('別表第2'),
-    fetchSheet('別表第3-1'),
-    fetchSheet('別表第3-2'),
-    fetchSheet('別表第4-1'),
-    fetchSheet('別表第4-2'),
-  ]).then(([
-    cosingRaw, japanRaw,
-    annexII, annexIII, annexIV, annexV, annexVI,
-    b1, b2, b31, b32, b41, b42
-  ]) => {
-    const euAnnexData = { AnnexII:annexII, AnnexIII:annexIII, AnnexIV:annexIV, AnnexV:annexV, AnnexVI:annexVI };
-    const jpAnnexData = {
-      '別表第1':b1, '別表第2':b2,
-      '別表第3-1':b31, '別表第3-2':b32,
-      '別表第4-1':b41, '別表第4-2':b42,
+  // ── 원료정보 Map ────────────────────────────────────────────
+  // 헤더: 제품명(0), 조성(1), 제조사(2), 공급사(3), 담당자(4), 연락처(5), e-mail(6)
+  const matMap = {};
+  for (let k = 1; k < matRaw.length; k++) {
+    const r = matRaw[k];
+    const comp = (r[1]||'').trim();
+    if (!comp) continue;
+    const matObj = {
+      productName: r[0]||'', composition:comp,
+      maker:r[2]||'', supplier:r[3]||'',
+      manager:r[4]||'', tel:r[5]||'', email:r[6]||'',
     };
-    const fullData = {
-      ...phase1,
-      cosingMap:   buildCosingMap(cosingRaw, euAnnexData),
-      japanMap:    buildJapanMap(japanRaw, jpAnnexData),
-      detailReady: true,
-    };
-    onDetailReady && onDetailReady(fullData);
-  }).catch(err => {
-    console.warn('Phase 2 로딩 실패:', err);
-  });
+    comp.split(/;\s*/).forEach(ing => {
+      ing = ing.trim();
+      if (!ing) return;
+      if (!matMap[ing]) matMap[ing] = [];
+      matMap[ing].push(matObj);
+    });
+  }
 
-  return phase1;
+  // ── 검색 인덱스 ─────────────────────────────────────────────
+  const index = [];
+  for (let i = 1; i < inciRaw.length; i++) {
+    const r = inciRaw[i];
+    const kor = (r[0]||'').trim();
+    if (!kor) continue;
+    index.push({
+      kor,
+      eng:     r[1]||'',
+      old:     r[2]||'',
+      eu:      r[3]||'',
+      cn:      r[4]||'',
+      jp:      r[5]||'',
+      cas:     r[6]||'',
+      ec:      r[7]||'',
+      unii:    r[8]||'',
+      origin:  r[9]||'',
+      formula: r[10]||'',
+      func:    r[11]||'',
+      regType: r[12]||'',
+      regName: r[13]||'',
+      regNote: r[14]||'',
+      history: r[15]||'',
+      ewg:     r[16]||'',
+      ewgData: r[17]||'',
+    });
+  }
+
+  prog('완료!');
+  return { index, cosingMap, japanMap, reglMap, matMap };
 }
