@@ -277,6 +277,8 @@ export async function loadAllData(onProgress) {
       manager:     supInfo.manager||'',
       tel:         supInfo.tel||'',
       email:       supInfo.email||'',
+      feature:     r[4]||'',
+      funcType:    r[5]||'',
     };
     comp.split(/;\s*/).forEach(ing => {
       ing = ing.trim();
