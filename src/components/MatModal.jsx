@@ -51,12 +51,12 @@ export default function MatModal({ data, onClose }) {
         <div className="modal-title">{data.productName}</div>
         <div className="modal-grid">
           <span className="ml">제품명</span><span className="mv">{data.productName}</span>
+          {data.feature && <><span className="ml">특징</span><span className="mv">{data.feature}</span></>}
+          {data.funcType && <><span className="ml">기능</span><span className="mv">{data.funcType}</span></>}
           <span className="ml">제조사</span><span className="mv">{data.maker}</span>
           <span className="ml">공급사</span><span className="mv">{data.supplier}</span>
           <span className="ml">담당자</span><span className="mv">{data.manager}</span>
           <span className="ml">연락처</span><span className="mv">{data.tel}</span>
-          {data.feature && <><span className="ml">특징</span><span className="mv">{data.feature}</span></>}
-          {data.funcType && <><span className="ml">기능</span><span className="mv">{data.funcType}</span></>}
         </div>
         <div className="ml" style={{marginBottom:6,fontSize:13}}>조성</div>
         <div className="modal-comp">{data.composition}</div>
