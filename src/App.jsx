@@ -99,7 +99,15 @@ export default function App() {
         <JapanModal data={japanTarget || null} onClose={() => setJapanTarget(null)} />
       )}
       {matTarget && (
-        <MatModal data={matTarget} onClose={() => setMatTarget(null)} />
+        <MatModal
+          data={matTarget}
+          onClose={() => setMatTarget(null)}
+          onOpenIngredient={(korName) => {
+            if (!data) return;
+            const found = data.index.find(item => item.kor === korName.trim());
+            if (found) { setMatTarget(null); setSelected(found); }
+          }}
+        />
       )}
     </div>
   );

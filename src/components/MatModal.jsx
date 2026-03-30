@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function MatModal({ data, onClose }) {
+export default function MatModal({ data, onClose, onOpenIngredient }) {
   const [form, setForm] = useState({ name:'', title:'', company:'', tel:'', email:'', addr:'', reqType:'샘플 요청', msg:'' });
   const [sending, setSending] = useState(false);
 
@@ -59,7 +59,27 @@ export default function MatModal({ data, onClose }) {
           <span className="ml">연락처</span><span className="mv">{data.tel}</span>
         </div>
         <div className="ml" style={{marginBottom:6,fontSize:13}}>조성</div>
-        <div className="modal-comp">{data.composition}</div>
+        <div className="modal-comp">
+          {data.composition.split(/;\s*/).map((ing, i, arr) => {
+            const name = ing.trim();
+            if (!name) return null;
+            return (
+              <span key={i}>
+                <span
+                  onClick={() => onOpenIngredient && onOpenIngredient(name)}
+                  style={{
+                    cursor: onOpenIngredient ? 'pointer' : 'default',
+                    color: '#2c5f8a',
+                    textDecoration: onOpenIngredient ? 'underline' : 'none',
+                  }}
+                >
+                  {name}
+                </span>
+                {i < arr.length - 1 && <span style={{color:'#999'}}> ; </span>}
+              </span>
+            );
+          })}
+        </div>
         <div className="req-area">
           <div className="req-title">샘플/자료 요청</div>
           <div className="f-grid">
