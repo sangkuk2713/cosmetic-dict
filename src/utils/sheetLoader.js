@@ -6,6 +6,7 @@ const SHEET_GID = {
   Japan:          '373145437',
   사용제한성분:   '206448184',
   원료정보:       '807032163',
+  공급사정보:     '1703849239',
   AnnexII:        '2116139856',
   AnnexIII:       '362214914',
   AnnexIV:        '36412469',
@@ -155,7 +156,7 @@ export async function loadAllData(onProgress) {
 
   // 전부 병렬 로딩
   const [
-    inciRaw, cosingRaw, japanRaw, reglRaw, matRaw,
+    inciRaw, cosingRaw, japanRaw, reglRaw, matRaw, supRaw,
     annexII, annexIII, annexIV, annexV, annexVI,
     b1, b2, b31, b32, b41, b42
   ] = await Promise.all([
@@ -164,6 +165,7 @@ export async function loadAllData(onProgress) {
     fetchSheet('Japan'),
     fetchSheet('사용제한성분'),
     fetchSheet('원료정보'),
+    fetchSheet('공급사정보'),
     fetchSheet('AnnexII'),
     fetchSheet('AnnexIII'),
     fetchSheet('AnnexIV'),
@@ -244,17 +246,37 @@ export async function loadAllData(onProgress) {
     });
   }
 
-  // ── 원료정보 Map ────────────────────────────────────────────
-  // 헤더: 제품명(0), 조성(1), 제조사(2), 공급사(3), 담당자(4), 연락처(5), e-mail(6)
+  // ── 공급사정보 Map (공급사명 기준) ────────────────────────────
+  // 헤더: 공급사(0), 담당자(1), 연락처(2), e-mail(3)
+  const supMap = {};
+  for (let s = 1; s < supRaw.length; s++) {
+    const r = supRaw[s];
+    const sup = (r[0]||'').trim();
+    if (!sup) continue;
+    supMap[sup] = {
+      manager: r[1]||'',
+      tel:     r[2]||'',
+      email:   r[3]||'',
+    };
+  }
+
+  // ── 원료정보 Map (공급사정보와 JOIN) ────────────────────────
+  // 헤더: 제품명(0), 조성(1), 제조사(2), 공급사(3)
   const matMap = {};
   for (let k = 1; k < matRaw.length; k++) {
     const r = matRaw[k];
     const comp = (r[1]||'').trim();
     if (!comp) continue;
+    const supplier = (r[3]||'').trim();
+    const supInfo = supMap[supplier] || {};
     const matObj = {
-      productName: r[0]||'', composition:comp,
-      maker:r[2]||'', supplier:r[3]||'',
-      manager:r[4]||'', tel:r[5]||'', email:r[6]||'',
+      productName: r[0]||'',
+      composition: comp,
+      maker:       r[2]||'',
+      supplier:    supplier,
+      manager:     supInfo.manager||'',
+      tel:         supInfo.tel||'',
+      email:       supInfo.email||'',
     };
     comp.split(/;\s*/).forEach(ing => {
       ing = ing.trim();
