@@ -54,17 +54,12 @@ function JapanAnnexSection({ annexRows }) {
                 {label} ({ar.searchName})
               </div>
               <div className="regl-scroll">
-                <table className="regl-table">
-                  <thead><tr><th>화장품 종류/사용목적</th><th>최대배합량(100g당)</th></tr></thead>
-                  <tbody>
-                    {ar.rows.map((rw,j) => (
-                      <tr key={j}>
-                        <td>{rw.cosmeType}</td>
-                        <td style={{textAlign:'center',fontWeight:'bold',color:'#c00'}}>{rw.maxConc}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {ar.rows.map((rw,j) => (
+                  <div key={j} className="regl-card">
+                    <div className="regl-dt"><strong>화장품 종류/사용목적:</strong> {rw.cosmeType}</div>
+                    <div className="regl-dd" style={{color:'var(--badge-ban-text)', fontWeight:'500'}}><strong>최대배합량(100g당):</strong> {rw.maxConc}</div>
+                  </div>
+                ))}
               </div>
             </div>
           );
@@ -76,18 +71,11 @@ function JapanAnnexSection({ annexRows }) {
                 {label} ({ar.searchName})
               </div>
               <div className="regl-scroll">
-                <table className="regl-table">
-                  <thead>
-                    <tr><th>세척용<br/>(점막X)</th><th>비세척용<br/>(점막X)</th><th>점막 사용 가능</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{textAlign:'center',fontWeight:'bold',color:'#c00'}}>{ar.wash||'-'}</td>
-                      <td style={{textAlign:'center',fontWeight:'bold',color:'#c00'}}>{ar.nonwash||'-'}</td>
-                      <td style={{textAlign:'center',fontWeight:'bold',color:'#c00'}}>{ar.mucosa||'-'}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div className="regl-card" style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                  <div className="regl-dt"><strong>세척용 (점막X):</strong> <span style={{color:'var(--badge-ban-text)', fontWeight:'500'}}>{ar.wash||'-'}</span></div>
+                  <div className="regl-dt"><strong>비세척용 (점막X):</strong> <span style={{color:'var(--badge-ban-text)', fontWeight:'500'}}>{ar.nonwash||'-'}</span></div>
+                  <div className="regl-dt"><strong>점막 사용 가능:</strong> <span style={{color:'var(--badge-ban-text)', fontWeight:'500'}}>{ar.mucosa||'-'}</span></div>
+                </div>
               </div>
             </div>
           );
@@ -103,8 +91,13 @@ export default function JapanModal({ data, onClose }) {
     <div className="sub-overlay show" onClick={e => e.target===e.currentTarget && onClose()}>
       <div className="sub-modal">
         <div className="sub-header">
-          <span className="sub-title">🇯🇵 일본 성분 정보{data ? ` - ${data.jpName}` : ''}</span>
-          <button className="btn-close-detail" onClick={onClose}>✕</button>
+          <span className="sub-title">
+            <span className="google-symbols result-icon" style={{marginRight: '8px', color: 'var(--primary-color)'}}>map</span>
+            🇯🇵 일본 성분 정보{data ? ` - ${data.jpName}` : ''}
+          </span>
+          <button className="btn-close-detail" onClick={onClose}>
+            <span className="google-symbols">close</span>
+          </button>
         </div>
         <div className="sub-body">
           {!data ? (

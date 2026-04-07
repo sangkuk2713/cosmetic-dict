@@ -1,3 +1,5 @@
+import localforage from 'localforage';
+
 const SS_ID = '1A41Zr4anXAv4369D6IfmbIXuIXCkZ1gVynMEuUgOjNQ';
 
 const SHEET_GID = {
@@ -152,8 +154,30 @@ function lookupAnnex(annexNum, refNo, annexData) {
 // ── 전체 데이터 로드 ─────────────────────────────────────────
 export async function loadAllData(onProgress) {
   const prog = msg => onProgress && onProgress(msg);
-  prog('성분 데이터 로딩 중...');
+  
+  // 1. 캐시 확인
+  try {
+    const cached = await localforage.getItem('cosmetic_dict_cached_data');
+    if (cached) {
+      prog('캐시된 데이터를 불러왔습니다.');
+      
+      // 백그라운드에서 조용히 최신 데이터 갱신 (Stale-While-Revalidate)
+      fetchAndCacheData().catch(e => console.error("Background fetch failed", e));
+      
+      return cached;
+    }
+  } catch (err) {
+    console.error("Cache read error:", err);
+  }
 
+  // 2. 캐시가 없으면 최초 로드
+  prog('데이터를 처음으로 로딩 중입니다. (5~10초 소요)');
+  return await fetchAndCacheData(prog);
+}
+
+// ── 실제 데이터 패치 및 캐싱 로직 ────────────────────────────────
+async function fetchAndCacheData(prog = null) {
+  const p = msg => prog && prog(msg);
   // 전부 병렬 로딩
   const [
     inciRaw, cosingRaw, japanRaw, reglRaw, matRaw, supRaw,
@@ -316,6 +340,13 @@ export async function loadAllData(onProgress) {
     });
   }
 
-  prog('완료!');
-  return { index, cosingMap, japanMap, reglMap, matMap };
+  p('완료!');
+  const finalData = { index, cosingMap, japanMap, reglMap, matMap };
+  
+  // 로컬 캐시에 저장
+  try {
+    await localforage.setItem('cosmetic_dict_cached_data', finalData);
+  } catch(e) { console.error("Cache save error", e); }
+  
+  return finalData;
 }

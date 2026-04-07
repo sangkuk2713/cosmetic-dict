@@ -13,14 +13,22 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
     <div className="detail-overlay show" onClick={e => e.target===e.currentTarget && onClose()}>
       <div className="detail-modal" style={modalStyle}>
         <div className="detail-modal-header">
-          <span className="detail-modal-title">{item.kor}</span>
-          <button className="btn-close-detail" onClick={onClose}>✕</button>
+          <span className="detail-modal-title">
+            <span className="google-symbols filled">info</span>
+            {item.kor}
+          </span>
+          <button className="btn-close-detail" onClick={onClose}>
+            <span className="google-symbols">close</span>
+          </button>
         </div>
         <div className="detail-modal-body">
 
           {/* 기본 정보 */}
           <div className="detail-section">
-            <div className="section-title">기본 정보</div>
+            <div className="section-title">
+              <span className="google-symbols">list_alt</span> 
+              기본 정보
+            </div>
             <InfoTable>
               <InfoRowIf    label="국문명"    value={item.kor} />
               <InfoRowMulti label="영문명"    value={item.eng} />
@@ -42,7 +50,10 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           {/* 국내 규제 */}
           {hasNatlRegl && (
             <div className="detail-section">
-              <div className="section-title">국내 규제 정보</div>
+              <div className="section-title">
+                <span className="google-symbols">gavel</span> 
+                국내 규제 정보
+              </div>
               <div className="natl-regl-box">
                 {item.regType && <div className="natl-regl-row"><span className="natl-regl-label">구분</span><span className="natl-regl-val">{item.regType}</span></div>}
                 {item.regName && <div className="natl-regl-row"><span className="natl-regl-label">고시명</span><span className="natl-regl-val">{item.regName}</span></div>}
@@ -54,28 +65,25 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           {/* 규제 정보 (사용제한성분) */}
           {reglRows && reglRows.length > 0 && (
             <div className="detail-section">
-              <div className="section-title">규제 정보</div>
+              <div className="section-title">
+                <span className="google-symbols">public</span> 
+                규제 정보
+              </div>
               <div className="regl-scroll">
-                <table className="regl-table">
-                  <thead>
-                    <tr><th>규제유형</th><th>국가명</th><th>고시원료명</th><th>단서조항</th><th>제한사항</th></tr>
-                  </thead>
-                  <tbody>
-                    {reglRows.map((r, i) => (
-                      <tr key={i}>
-                        <td>
-                          <span className={r.regType === '금지' ? 'badge-ban' : 'badge-limit'}>
-                            {r.regType}
-                          </span>
-                        </td>
-                        <td>{r.country}</td>
-                        <td>{r.noticeName}</td>
-                        <td>{r.provis}</td>
-                        <td>{r.limitCond}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {reglRows.map((r, i) => (
+                  <div key={i} className="regl-card">
+                    <div className="regl-badge-row">
+                      <span className={r.regType === '금지' ? 'badge-ban' : 'badge-limit'}>
+                        {r.regType === '금지' ? <span className="google-symbols" style={{fontSize: '14px'}}>do_not_disturb_on</span> : <span className="google-symbols" style={{fontSize: '14px'}}>warning</span>}
+                        {r.regType}
+                      </span>
+                    </div>
+                    <div className="regl-dd"><strong>고시원료명:</strong> {r.noticeName}</div>
+                    {r.provis && <div className="regl-dt">단서조항: {r.provis}</div>}
+                    {r.limitCond && <div className="regl-dt">제한사항: {r.limitCond}</div>}
+                    <div className="regl-dt" style={{marginTop: '8px', color: 'var(--text-tertiary)'}}>국가: {r.country}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -83,7 +91,10 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           {/* 관련 원료 - 환경변수로 표시 여부 제어 */}
           {process.env.REACT_APP_SHOW_MAT !== 'false' && matRows && matRows.length > 0 && (
             <div className="detail-section">
-              <div className="section-title">관련 원료</div>
+              <div className="section-title">
+                <span className="google-symbols">inventory_2</span> 
+                관련 원료
+              </div>
               <div className="mat-list">
                 {matRows.map((m, i) => (
                   <div key={i} className="mat-card" onClick={() => onOpenMat(m)}>

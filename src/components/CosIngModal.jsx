@@ -6,8 +6,13 @@ export default function CosIngModal({ data, onClose }) {
     <div className="sub-overlay show" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sub-modal">
         <div className="sub-header">
-          <span className="sub-title">🇪🇺 유럽 성분 정보{data ? ` - ${data.inciName}` : ''}</span>
-          <button className="btn-close-detail" onClick={onClose}>✕</button>
+          <span className="sub-title">
+            <span className="google-symbols result-icon" style={{marginRight: '8px', color: 'var(--primary-color)'}}>public</span>
+            🇪🇺 유럽 성분 정보{data ? ` - ${data.inciName}` : ''}
+          </span>
+          <button className="btn-close-detail" onClick={onClose}>
+            <span className="google-symbols">close</span>
+          </button>
         </div>
         <div className="sub-body">
           {!data ? (
@@ -39,26 +44,19 @@ export default function CosIngModal({ data, onClose }) {
                 <div className="detail-section">
                   <div className="section-title">유럽 규제 정보 (Annex)</div>
                   <div className="regl-scroll">
-                    <table className="regl-table">
-                      <thead>
-                        <tr>
-                          <th>Annex</th>
-                          <th>성분명</th>
-                          <th>최대농도</th>
-                          <th>사용조건</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.annexRows.map((ar, i) => (
-                          <tr key={i}>
-                            <td><b>Annex {ar.annex}</b></td>
-                            <td>{ar.data.name}</td>
-                            <td>{ar.data.conc}</td>
-                            <td>{ar.data.wording}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    {data.annexRows.map((ar, i) => (
+                      <div key={i} className="regl-card">
+                        <div className="regl-badge-row">
+                          <span className="badge-limit">
+                            <span className="google-symbols" style={{fontSize: '14px'}}>warning</span>
+                            Annex {ar.annex}
+                          </span>
+                        </div>
+                        <div className="regl-dd"><strong>성분명:</strong> {ar.data.name}</div>
+                        {ar.data.conc && <div className="regl-dt"><strong>최대농도:</strong> {ar.data.conc}</div>}
+                        {ar.data.wording && <div className="regl-dt"><strong>사용조건:</strong> {ar.data.wording}</div>}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

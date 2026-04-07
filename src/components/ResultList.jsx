@@ -1,26 +1,32 @@
 import React from 'react';
 
 export default function ResultList({ results, selected, onSelect }) {
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-
   return (
     <div className="result-list">
-      <div className={`result-header ${isMobile ? 'mobile' : 'desktop'}`}>
-        <span>No</span>
-        <span>국문명</span>
-        <span>영문명</span>
-        {!isMobile && <><span>CAS No</span><span>구명칭</span></>}
-      </div>
       {results.map((item, idx) => (
         <div
           key={idx}
-          className={`result-row ${isMobile ? 'mobile' : 'desktop'} ${selected === item ? 'selected' : ''}`}
+          className={`result-card ${selected === item ? 'selected' : ''}`}
           onClick={() => onSelect(item)}
         >
-          <span>{idx + 1}</span>
-          <span>{item.kor}</span>
-          <span>{item.eng}</span>
-          {!isMobile && <><span>{item.cas}</span><span>{item.old}</span></>}
+          <div className="res-title-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+            <span className="res-kor" style={{ fontSize: '18px', fontWeight: 'bold' }}>{item.kor}</span>
+            <span className="res-eng" style={{ fontSize: '14px', color: 'var(--primary-color)' }}>{item.eng}</span>
+          </div>
+          
+          <div className="res-badges" style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {item.cas && item.cas !== '-' && (
+              <span className="badge badge-cas">CAS: {item.cas}</span>
+            )}
+            {item.old && item.old !== '-' && (
+              <span className="badge badge-old">구명칭: {item.old}</span>
+            )}
+            {item.regType && (
+              <span className={item.regType === '금지' ? 'badge badge-ban' : 'badge badge-limit'}>
+                {item.regType}
+              </span>
+            )}
+          </div>
         </div>
       ))}
     </div>

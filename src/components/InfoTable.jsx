@@ -56,8 +56,8 @@ export function InfoRowLinks({ label, value, onClick }) {
       {parts.map((p, i) => (
         <div key={i}>
           {p && p !== '-'
-            ? <span className="dv-link" onClick={() => onClick(p)}>{p}</span>
-            : <span style={{ color: '#aaa' }}>-</span>
+            ? <span className="dv-link" onClick={() => onClick(p)}>{p} <span className="google-symbols" style={{fontSize: '16px'}}>open_in_new</span></span>
+            : <span style={{ color: 'var(--text-tertiary)' }}>-</span>
           }
         </div>
       ))}
