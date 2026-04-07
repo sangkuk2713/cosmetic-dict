@@ -171,6 +171,7 @@ function togglePlace(id) {
 // 스케줄 바스켓 업데이트
 function updateItinerary() {
   countEl.innerText = `${selectedPlaces.length}개 선택됨`;
+  const btnPrint = document.getElementById('btnPrint');
   
   if (selectedPlaces.length === 0) {
     itineraryListEl.innerHTML = `
@@ -179,27 +180,40 @@ function updateItinerary() {
         <p>아직 추가된 일정이 없습니다.</p>
         <span>왼쪽에서 장소를 추가해주세요!</span>
       </div>`;
-    btnShare.classList.add('disabled');
+    btnPrint.classList.add('disabled');
     return;
   }
 
-  btnShare.classList.remove('disabled');
+  btnPrint.classList.remove('disabled');
   itineraryListEl.innerHTML = '';
   
   selectedPlaces.forEach((place, index) => {
+    // 기본 방문시간 배정 (임시)
+    if (!place.visitTime) place.visitTime = `${String(10 + index * 2).padStart(2, '0')}:00`;
+
     const el = document.createElement('div');
     el.className = 'selected-item';
     el.innerHTML = `
-      <div class="sel-info">
+      <div class="sel-info" style="flex:1;">
         <h4><span class="badge" style="background:rgba(255,255,255,0.1); color:var(--text-secondary); margin-right:8px">${index+1}</span> ${place.name}</h4>
-        <p>${place.type === 'food' ? '맛집' : '숙소'}</p>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+          <input type="time" value="${place.visitTime}" onchange="changeTime(${place.id}, this.value)" 
+            style="background:rgba(0,0,0,0.5); color:#fff; border:1px solid #444; border-radius:4px; padding:4px; font-size:13px; font-family:inherit;">
+          <p style="margin:0;">${place.type === 'food' ? '맛집' : (place.type === 'cafe' ? '카페/비치' : '숙소')}</p>
+        </div>
       </div>
-      <button class="btn-remove" onclick="togglePlace(${place.id})">
+      <button class="btn-remove" onclick="togglePlace(${place.id})" style="margin-left:8px;">
         <span class="material-symbols-rounded">delete</span>
       </button>
     `;
     itineraryListEl.appendChild(el);
   });
+}
+
+// 방문시간 업데이트
+function changeTime(id, newTime) {
+  const p = selectedPlaces.find(x => x.id === id);
+  if(p) p.visitTime = newTime;
 }
 
 // 탭 필터
@@ -214,16 +228,45 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
 // 초기 구동
 renderPlaces();
 
-// 공유하기 클립보드 복사
-btnShare.addEventListener('click', () => {
+// 일정표 요약 및 인쇄 호출
+document.getElementById('btnPrint').addEventListener('click', () => {
   if(selectedPlaces.length === 0) return;
-  let text = "🚗 강화도 1박 2일 우리들의 코스 🚗\n\n";
-  selectedPlaces.forEach((p, i) => {
-    text += `${i+1}. ${p.name} (${p.desc})\n`;
-  });
-  text += "\n이대로 가는거 동의?";
   
-  navigator.clipboard.writeText(text).then(() => {
-    alert("일정이 텍스트로 클립보드에 복사되었습니다! 단톡방에 붙여넣기 하세요.");
-  });
+  // 시간순 정렬
+  const sorted = [...selectedPlaces].sort((a,b) => a.visitTime.localeCompare(b.visitTime));
+
+  const printWaitNodes = document.getElementById('printWaitNodes');
+  const printScheduleGrid = document.getElementById('printScheduleGrid');
+  
+  // 1. 타임라인 (선) 그리기
+  printWaitNodes.innerHTML = sorted.slice(0, 6).map((p, i) => `
+    <div class="node-step">
+      <div class="n-dot"></div>
+      <div class="n-name">${p.name}</div>
+      <div class="n-time">${p.visitTime}</div>
+    </div>
+  `).join('') + (sorted.length > 6 ? `<div class="node-step"><div class="n-dot"></div><div class="n-name">외 ${sorted.length-6}곳</div></div>` : '');
+
+  // 2. 스케줄 그리드 그리기
+  printScheduleGrid.innerHTML = sorted.map((p, i) => {
+    const timeVal = p.visitTime.split(':'); // ["10", "00"]
+    return `
+      <div class="s-card">
+        <div class="s-time-block">
+          <div class="s-time">${timeVal[0]}</div>
+          <div class="s-day">${timeVal[1]}</div>
+        </div>
+        <div class="s-content">
+          <div class="s-title"><span class="material-symbols-rounded type-icon">${p.icon}</span> ${p.name}</div>
+          <div class="s-desc">${p.desc}</div>
+          <div class="s-tags">
+            ${p.tags.slice(0, 2).map((t, idx) => `<span class="s-tag ${idx === 1 ? 'alt' : ''}">${t}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 3. 브라우저 인쇄 실행
+  setTimeout(() => window.print(), 300);
 });

@@ -54,7 +54,10 @@
         </div>
 
         <div class="itinerary-footer">
-          <button id="btnShare" class="btn-primary w-100 disabled">카카오톡 공유하기</button>
+          <button id="btnPrint" class="btn-primary w-100 disabled">
+            <span class="material-symbols-rounded" style="vertical-align:-6px; margin-right:4px;">print</span> 
+            나만의 일정 요약서 출력하기
+          </button>
         </div>
       </div>
     </section>
@@ -66,6 +69,64 @@
     <div class="modal-box glass-card">
       <button class="btn-close-modal" id="closeModalBtn"><span class="material-symbols-rounded">close</span></button>
       <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- A4 Printable Layout (Hidden on Screen) -->
+  <div class="print-layout" id="printLayout">
+    <!-- Header -->
+    <div class="print-header">
+      <div class="top-text">ONE DAY ROAD TRIP</div>
+      <div class="header-title-row">
+        <h1>강화도</h1>
+        <div class="d-day-box"><span class="material-symbols-rounded">schedule</span> 일정 요약</div>
+      </div>
+      <div class="bottom-text">GANGHWA ISLAND <span>당일 코스</span></div>
+    </div>
+    
+    <div class="print-body">
+      <!-- Horizontal Timeline Diagram -->
+      <div class="timeline-diagram">
+        <h3 class="section-title"><span class="marker">■</span> 이 동 경 로 • 이 동 코 스</h3>
+        <div class="nodes-container" id="printWaitNodes">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+      
+      <!-- Detailed Schedule list -->
+      <div class="schedule-details">
+        <h3 class="section-title"><span class="marker">■</span> 일 정 요 약</h3>
+        <div class="schedule-grid" id="printScheduleGrid">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- Tips Footer -->
+      <div class="print-tips">
+        <h3 class="section-title"><span class="marker" style="color:var(--p-orange)">💡</span> 기 타 정 보</h3>
+        <div class="tips-grid">
+          <div class="tip-box">
+            <h4>숙박 • 예약</h4>
+            <p>• 숙소 예약은 미리 확인</p>
+            <p>• 체크인/체크아웃 시간 엄수</p>
+          </div>
+          <div class="tip-box">
+            <h4>이동 • 주차</h4>
+            <p>• 자차 이동 시 주차장 로드뷰 확인</p>
+            <p>• 주말 강화대교/초지대교 정체 유의</p>
+          </div>
+          <div class="tip-box">
+            <h4>예상 경비</h4>
+            <p>• 식대: 인당 약 3~5만 원</p>
+            <p>• 숙박: 1박 약 15~30만 원</p>
+            <p>• 총경비: 10~20만원 선 예상</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="print-footer-banner">
+      <div class="banner-logo">강화도 🌊</div>
+      <div class="banner-desc">GANGHWA ISLAND TRIP</div>
     </div>
   </div>
 
