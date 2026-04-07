@@ -16,6 +16,11 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           <span className="detail-modal-title">
             <span className="google-symbols filled">info</span>
             {item.kor}
+            {item.isMixed !== undefined && (
+              <span className={item.isMixed ? 'badge badge-mixed' : 'badge badge-single'} style={{ marginLeft: '12px', fontSize: '12px', verticalAlign: 'middle' }}>
+                {item.isMixed ? '혼합원료' : '단일원료'}
+              </span>
+            )}
           </span>
           <button className="btn-close-detail" onClick={onClose}>
             <span className="google-symbols">close</span>

@@ -24,6 +24,11 @@
   --radius-lg: 24px;
   --radius-pill: 500px;
   
+  .badge-ban { background: #feebeb; color: #b71c1c; border: 1px solid #ffcdd2; }
+  .badge-limit { background: #fff8e1; color: #f57f17; border: 1px solid #ffecb3; }
+  .badge-single { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+  .badge-mixed { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
   --badge-ban-bg: #fce8e6;
   --badge-ban-text: #c5221f;
   --badge-limit-bg: #fef7e0;
@@ -39,6 +44,11 @@
   --bg-surface: #282a2c;
   --bg-surface-elevated: #303134;
   
+  .badge-ban { background: rgba(183, 28, 28, 0.2); color: #ef9a9a; border-color: rgba(183, 28, 28, 0.4); }
+  .badge-limit { background: rgba(245, 127, 23, 0.2); color: #fff59d; border-color: rgba(245, 127, 23, 0.4); }
+  .badge-single { background: rgba(46, 125, 50, 0.2); color: #a5d6a7; border-color: rgba(46, 125, 50, 0.4); }
+  .badge-mixed { background: rgba(21, 101, 192, 0.2); color: #90caf9; border-color: rgba(21, 101, 192, 0.4); }
+
   --text-primary: #e3e3e3;
   --text-secondary: #c4c7c5;
   --text-tertiary: #8e918f;
@@ -144,6 +154,71 @@ h1 .google-symbols { font-size: 32px; color: var(--primary-color); }
   transition: all 0.5s cubic-bezier(0.2, 0, 0, 1);
 }
 .hero-mode h1 { font-size: 44px; margin-bottom: 32px; justify-content: center; }
+
+/* Top Ten Section */
+.top-ten-section {
+  margin-top: 48px;
+  animation: fadeInUp 0.8s ease;
+}
+.top-ten-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.top-item-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-surface-elevated);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+.top-item-card:hover {
+  transform: translateY(-2px);
+  background: var(--bg-surface);
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.rank-badge {
+  width: 24px;
+  height: 24px;
+  background: var(--primary-color);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+}
+.top-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.top-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.top-item-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .hero-mode h1 { font-size: 24px; }
+  .top-ten-grid { grid-template-columns: 1fr; }
+}
 
 /* Search Box */
 .search-box {

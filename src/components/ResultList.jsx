@@ -22,8 +22,13 @@ export default function ResultList({ results, selected, onSelect }) {
               <span className="badge badge-old">구명칭: {item.old}</span>
             )}
             {item.regType && (
-              <span className={item.regType === '금지' ? 'badge badge-ban' : 'badge badge-limit'}>
+              <span className={item.regType.includes('금지') ? 'badge badge-ban' : 'badge badge-limit'}>
                 {item.regType}
+              </span>
+            )}
+            {item.isMixed !== undefined && (
+              <span className={item.isMixed ? 'badge badge-mixed' : 'badge badge-single'}>
+                {item.isMixed ? '혼합원료' : '단일원료'}
               </span>
             )}
           </div>

@@ -6,6 +6,8 @@ import DetailModal from './components/DetailModal';
 import CosIngModal from './components/CosIngModal';
 import JapanModal from './components/JapanModal';
 import MatModal from './components/MatModal';
+import TopTen from './components/TopTen';
+import { trackIngredientView } from './utils/firebase';
 import './App.css';
 
 export default function App() {
@@ -47,16 +49,39 @@ export default function App() {
   useEffect(() => {
     if (!data || !query.trim()) { setResults([]); return; }
     const kw = query.trim().toLowerCase();
-    const res = [];
+    
+    // 1. 결과 분류용 배열
+    const exactMatches = [];
+    const startsWithMatches = [];
+    const containsMatches = [];
+
+    const isMixed = (kor) => {
+      if (!data.matMap[kor]) return false;
+      return data.matMap[kor].some(m => m.composition && m.composition.includes(';'));
+    };
+
     for (const item of data.index) {
-      if (item.kor.toLowerCase().includes(kw) ||
-          item.eng.toLowerCase().includes(kw) ||
-          item.old.toLowerCase().includes(kw)) {
-        res.push(item);
-        if (res.length >= 200) break;
+      const korLower = item.kor.toLowerCase();
+      const engLower = item.eng.toLowerCase();
+      const oldLower = item.old.toLowerCase();
+
+      // 성분별 단일/혼합 여부 미리 계산 (결과 리스트에서 쓰기 위함)
+      const mixStatus = isMixed(item.kor);
+      const enrichedItem = { ...item, isMixed: mixStatus };
+
+      if (korLower === kw || engLower === kw) {
+        exactMatches.push(enrichedItem);
+      } else if (korLower.startsWith(kw) || engLower.startsWith(kw)) {
+        startsWithMatches.push(enrichedItem);
+      } else if (korLower.includes(kw) || engLower.includes(kw) || oldLower.includes(kw)) {
+        containsMatches.push(enrichedItem);
       }
+      
+      if (exactMatches.length + startsWithMatches.length + containsMatches.length >= 250) break;
     }
-    setResults(res);
+    
+    // 우선순위에 따라 합치기
+    setResults([...exactMatches, ...startsWithMatches, ...containsMatches]);
   }, [query, data]);
 
   const openCosIng = useCallback((inciName) => {
@@ -139,9 +164,18 @@ export default function App() {
         </div>
 
         {results.length > 0 && (
-          <ResultList results={results} selected={selected} onSelect={setSelected} />
+          <ResultList results={results} selected={selected} onSelect={(item) => {
+            setSelected(item);
+            if(item) trackIngredientView(item.kor); // 조회수 증가 요청
+          }} />
         )}
 
+        {isHeroMode && (
+          <TopTen data={data} onSelect={(item) => {
+            setSelected(item);
+            if(item) trackIngredientView(item.kor);
+          }} />
+        )}
       </div>
 
       {selected && (
