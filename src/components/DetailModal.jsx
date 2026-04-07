@@ -16,11 +16,6 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           <span className="detail-modal-title">
             <span className="google-symbols filled">info</span>
             {item.kor}
-            {item.isMixed !== undefined && (
-              <span className={item.isMixed ? 'badge badge-mixed' : 'badge badge-single'} style={{ marginLeft: '12px', fontSize: '12px', verticalAlign: 'middle' }}>
-                {item.isMixed ? '혼합원료' : '단일원료'}
-              </span>
-            )}
           </span>
           <button className="btn-close-detail" onClick={onClose}>
             <span className="google-symbols">close</span>
@@ -101,12 +96,20 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
                 관련 원료
               </div>
               <div className="mat-list">
-                {matRows.map((m, i) => (
-                  <div key={i} className="mat-card" onClick={() => onOpenMat(m)}>
-                    <div className="mat-card-title">{m.productName}</div>
-                    <div className="mat-card-sub">{m.supplier}{m.maker ? ` | ${m.maker}` : ''}</div>
-                  </div>
-                ))}
+                {matRows.map((m, i) => {
+                  const isMixedMat = m.composition && (m.composition.includes(';') || m.composition.includes(','));
+                  return (
+                    <div key={i} className="mat-card" onClick={() => onOpenMat(m)}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div className="mat-card-title">{m.productName}</div>
+                        <span className={isMixedMat ? 'badge badge-mixed' : 'badge badge-single'} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                          {isMixedMat ? '혼합원료' : '단일원료'}
+                        </span>
+                      </div>
+                      <div className="mat-card-sub">{m.supplier}{m.maker ? ` | ${m.maker}` : ''}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

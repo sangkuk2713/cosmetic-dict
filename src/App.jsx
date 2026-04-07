@@ -55,26 +55,17 @@ export default function App() {
     const startsWithMatches = [];
     const containsMatches = [];
 
-    const isMixed = (kor) => {
-      if (!data.matMap[kor]) return false;
-      return data.matMap[kor].some(m => m.composition && m.composition.includes(';'));
-    };
-
     for (const item of data.index) {
       const korLower = item.kor.toLowerCase();
       const engLower = item.eng.toLowerCase();
       const oldLower = item.old.toLowerCase();
 
-      // 성분별 단일/혼합 여부 미리 계산 (결과 리스트에서 쓰기 위함)
-      const mixStatus = isMixed(item.kor);
-      const enrichedItem = { ...item, isMixed: mixStatus };
-
       if (korLower === kw || engLower === kw) {
-        exactMatches.push(enrichedItem);
+        exactMatches.push(item);
       } else if (korLower.startsWith(kw) || engLower.startsWith(kw)) {
-        startsWithMatches.push(enrichedItem);
+        startsWithMatches.push(item);
       } else if (korLower.includes(kw) || engLower.includes(kw) || oldLower.includes(kw)) {
-        containsMatches.push(enrichedItem);
+        containsMatches.push(item);
       }
       
       if (exactMatches.length + startsWithMatches.length + containsMatches.length >= 250) break;

@@ -26,11 +26,6 @@ export default function ResultList({ results, selected, onSelect }) {
                 {item.regType}
               </span>
             )}
-            {item.isMixed !== undefined && (
-              <span className={item.isMixed ? 'badge badge-mixed' : 'badge badge-single'}>
-                {item.isMixed ? '혼합원료' : '단일원료'}
-              </span>
-            )}
           </div>
         </div>
       ))}
