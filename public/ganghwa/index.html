@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>강화도 1박 2일 플래너</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+
+  <header class="app-header">
+    <div class="logo">
+      <span class="material-symbols-rounded" style="color:var(--primary-color);">map</span>
+      <span>Ganghwa Planner</span>
+    </div>
+  </header>
+
+  <main class="app-container">
+    
+    <!-- Left: Catalog -->
+    <section class="catalog-section">
+      <div class="section-title">
+        <h2>어디로 갈까요?</h2>
+        <p>친구들과 가고 싶은 장소들을 골라보세요.</p>
+      </div>
+
+      <div class="category-tabs">
+        <button class="cat-btn active" data-cat="all">전체</button>
+        <button class="cat-btn" data-cat="food">맛집</button>
+        <button class="cat-btn" data-cat="stay">숙소</button>
+      </div>
+
+      <div class="places-grid" id="placesList"></div>
+    </section>
+
+    <!-- Right: Itinerary Planner -->
+    <section class="itinerary-section">
+      <div class="itinerary-glass">
+        <div class="itinerary-header">
+          <h2><span class="material-symbols-rounded">checklist</span> 나의 1박 2일 코스</h2>
+          <span id="itineraryCount" class="badge">0개 선택됨</span>
+        </div>
+        
+        <div class="itinerary-list" id="itineraryList">
+          <div class="empty-state">
+            <span class="material-symbols-rounded">flight_takeoff</span>
+            <p>아직 추가된 일정이 없습니다.</p>
+            <span>왼쪽에서 장소를 추가해주세요!</span>
+          </div>
+        </div>
+
+        <div class="itinerary-footer">
+          <button id="btnShare" class="btn-primary w-100 disabled">카카오톡 공유하기</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay hidden" id="detailModal">
+    <div class="modal-box glass-card">
+      <button class="btn-close-modal" id="closeModalBtn"><span class="material-symbols-rounded">close</span></button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
