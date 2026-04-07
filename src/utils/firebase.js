@@ -49,5 +49,8 @@ export const subscribeTopTen = (callback) => {
       ...doc.data()
     }));
     callback(list);
+  }, (error) => {
+    console.error("Firestore subscription error:", error);
+    callback([]); // 에러 발생 시 빈 리스트 반환하여 무한 로딩 방지
   });
 };
