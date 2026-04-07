@@ -161,7 +161,7 @@ export default function App() {
           }} />
         )}
 
-        {isHeroMode && (
+        {isHeroMode && process.env.REACT_APP_SHOW_MAT !== 'false' && (
           <TopTen data={data} onSelect={(item) => {
             setSelected(item);
             if(item) trackIngredientView(item.kor);
