@@ -168,6 +168,27 @@ function togglePlace(id) {
   renderPlaces(document.querySelector('.cat-btn.active').dataset.cat);
 }
 
+// 시간 선택 옵션 생성 (09:00 ~ 23:00)
+function generateTimeOptions(selectedTime) {
+  let options = '';
+  for(let h=9; h<=23; h++) {
+    for(let m of ['00', '30']) {
+      const t = `${String(h).padStart(2, '0')}:${m}`;
+      options += `<option value="${t}" ${t === selectedTime ? 'selected' : ''}>${t}</option>`;
+    }
+  }
+  return options;
+}
+
+// 방문시간 업데이트
+function changeTime(id, newTime) {
+  const p = selectedPlaces.find(x => x.id === id);
+  if(p) {
+    p.visitTime = newTime;
+    updateItinerary(); // 시간 변경 시 즉시 리스트 재정렬 및 반영
+  }
+}
+
 // 스케줄 바스켓 업데이트
 function updateItinerary() {
   countEl.innerText = `${selectedPlaces.length}개 선택됨`;
@@ -187,7 +208,10 @@ function updateItinerary() {
   btnPrint.classList.remove('disabled');
   itineraryListEl.innerHTML = '';
   
-  selectedPlaces.forEach((place, index) => {
+  // 시간순으로 정렬하여 렌더링
+  const sortedDisplay = [...selectedPlaces].sort((a,b) => a.visitTime.localeCompare(b.visitTime));
+
+  sortedDisplay.forEach((place, index) => {
     // 기본 방문시간 배정 (임시)
     if (!place.visitTime) place.visitTime = `${String(10 + index * 2).padStart(2, '0')}:00`;
 
@@ -197,9 +221,11 @@ function updateItinerary() {
       <div class="sel-info" style="flex:1;">
         <h4><span class="badge" style="background:rgba(255,255,255,0.1); color:var(--text-secondary); margin-right:8px">${index+1}</span> ${place.name}</h4>
         <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-          <input type="time" value="${place.visitTime}" onchange="changeTime(${place.id}, this.value)" 
-            style="background:rgba(0,0,0,0.5); color:#fff; border:1px solid #444; border-radius:4px; padding:4px; font-size:13px; font-family:inherit;">
-          <p style="margin:0;">${place.type === 'food' ? '맛집' : (place.type === 'cafe' ? '카페/비치' : '숙소')}</p>
+          <select onchange="changeTime(${place.id}, this.value)" 
+            style="background:#2a2a2a; color:#fff; border:1px solid var(--primary-color); border-radius:6px; padding:6px 10px; font-size:14px; font-family:inherit; cursor:pointer; outline:none; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23a8c7fa%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px;">
+            ${generateTimeOptions(place.visitTime)}
+          </select>
+          <p style="margin:0; font-size:12px; color:var(--text-secondary);">${place.type === 'food' ? '맛집' : (place.type === 'cafe' ? '카페/비치' : '숙소')}</p>
         </div>
       </div>
       <button class="btn-remove" onclick="togglePlace(${place.id})" style="margin-left:8px;">
@@ -208,12 +234,6 @@ function updateItinerary() {
     `;
     itineraryListEl.appendChild(el);
   });
-}
-
-// 방문시간 업데이트
-function changeTime(id, newTime) {
-  const p = selectedPlaces.find(x => x.id === id);
-  if(p) p.visitTime = newTime;
 }
 
 // 탭 필터
