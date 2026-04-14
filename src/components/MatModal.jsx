@@ -45,7 +45,7 @@ export default function MatModal({ data, onClose, onIngredientClick }) {
   const f = (key) => ({ value: form[key], onChange: e => setForm(p => ({...p, [key]: e.target.value})) });
 
   return (
-    <div className="modal-overlay show" onClick={e => e.target===e.currentTarget && onClose()}>
+    <div className="modal-overlay show">
       <div className="modal">
         <button className="btn-close" onClick={onClose}>
           <span className="google-symbols">close</span>

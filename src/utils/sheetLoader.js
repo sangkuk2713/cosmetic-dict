@@ -157,8 +157,8 @@ export async function loadAllData(onProgress) {
   
   // 1. 캐시 확인
   try {
-    const cached = await localforage.getItem('cosmetic_dict_cached_data');
-    if (cached) {
+    const cached = await localforage.getItem('cosmetic_dict_cached_data_v1.1');
+    if (cached && cached.matIndex) {
       prog('캐시된 데이터를 불러왔습니다.');
       
       // 백그라운드에서 조용히 최신 데이터 갱신 (Stale-While-Revalidate)
@@ -170,14 +170,15 @@ export async function loadAllData(onProgress) {
     console.error("Cache read error:", err);
   }
 
-  // 2. 캐시가 없으면 최초 로드
-  prog('데이터를 처음으로 로딩 중입니다. (5~10초 소요)');
+  // 2. 캐시가 없거나 불완전하면 최초 로드
+  prog('데이터를 로딩 중입니다. (5~10초 소요)');
   return await fetchAndCacheData(prog);
 }
 
 // ── 실제 데이터 패치 및 캐싱 로직 ────────────────────────────────
 async function fetchAndCacheData(prog = null) {
   const p = msg => prog && prog(msg);
+  p('엑셀 시트 정보를 가져오는 중...');
   // 전부 병렬 로딩
   const [
     inciRaw, cosingRaw, japanRaw, reglRaw, matRaw, supRaw,
@@ -203,7 +204,7 @@ async function fetchAndCacheData(prog = null) {
     fetchSheet('別表第4-2'),
   ]);
 
-  prog('데이터 처리 중...');
+  p('데이터 인덱싱 중...');
 
   const euAnnexData = { AnnexII:annexII, AnnexIII:annexIII, AnnexIV:annexIV, AnnexV:annexV, AnnexVI:annexVI };
   const jpAnnexData = {
@@ -287,14 +288,17 @@ async function fetchAndCacheData(prog = null) {
   // ── 원료정보 Map (공급사정보와 JOIN) ────────────────────────
   // 헤더: 제품명(0), 조성(1), 제조사(2), 공급사(3)
   const matMap = {};
+  const matIndex = [];
   for (let k = 1; k < matRaw.length; k++) {
     const r = matRaw[k];
+    const pName = (r[0]||'').trim();
+    if (!pName) continue;
+    
     const comp = (r[1]||'').trim();
-    if (!comp) continue;
     const supplier = (r[3]||'').trim();
     const supInfo = supMap[supplier] || {};
     const matObj = {
-      productName: r[0]||'',
+      productName: pName,
       composition: comp,
       maker:       r[2]||'',
       supplier:    supplier,
@@ -303,13 +307,18 @@ async function fetchAndCacheData(prog = null) {
       email:       supInfo.email||'',
       feature:     r[4]||'',
       funcType:    r[5]||'',
+      type:        'material' // Marker for ResultList
     };
-    comp.split(/;\s*/).forEach(ing => {
-      ing = ing.trim();
-      if (!ing) return;
-      if (!matMap[ing]) matMap[ing] = [];
-      matMap[ing].push(matObj);
-    });
+    matIndex.push(matObj);
+
+    if (comp) {
+      comp.split(/;\s*/).forEach(ing => {
+        ing = ing.trim();
+        if (!ing) return;
+        if (!matMap[ing]) matMap[ing] = [];
+        matMap[ing].push(matObj);
+      });
+    }
   }
 
   // ── 검색 인덱스 ─────────────────────────────────────────────
@@ -341,11 +350,11 @@ async function fetchAndCacheData(prog = null) {
   }
 
   p('완료!');
-  const finalData = { index, cosingMap, japanMap, reglMap, matMap };
+  const finalData = { index, cosingMap, japanMap, reglMap, matMap, matIndex };
   
-  // 로컬 캐시에 저장
+  // 로컬 캐시에 저장 (v1.1 캐시 키 일치)
   try {
-    await localforage.setItem('cosmetic_dict_cached_data', finalData);
+    await localforage.setItem('cosmetic_dict_cached_data_v1.1', finalData);
   } catch(e) { console.error("Cache save error", e); }
   
   return finalData;

@@ -88,7 +88,7 @@ function JapanAnnexSection({ annexRows }) {
 
 export default function JapanModal({ data, onClose }) {
   return (
-    <div className="sub-overlay show" onClick={e => e.target===e.currentTarget && onClose()}>
+    <div className="sub-overlay show">
       <div className="sub-modal">
         <div className="sub-header">
           <span className="sub-title">

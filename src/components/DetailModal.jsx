@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import InfoTable, { InfoRowIf, InfoRowMulti, InfoRowLinks, InfoRowInline } from './InfoTable';
+import { getIngredientSummary, askAiAboutIngredientStream } from '../utils/gemini';
 
 export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCosIng, onOpenJapan, onOpenMat }) {
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -7,10 +8,51 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
     ? { width:'100%', maxWidth:'100%', height:'100%', maxHeight:'100%', borderRadius:0 }
     : { width:'92%', maxWidth:'720px', maxHeight:'88vh', borderRadius:'12px' };
 
+  const [userQuestion, setUserQuestion] = useState('');
+  const [aiChat, setAiChat] = useState([]); // [{type: 'q', text: ''}, {type: 'a', text: ''}]
+  const [qaLoading, setQaLoading] = useState(false);
+  useEffect(() => {
+    if (item) {
+      setAiChat([]);
+    }
+  }, [item]);
+
+  const handleAskAi = async (e) => {
+    e.preventDefault();
+    if (!userQuestion.trim() || qaLoading) return;
+
+    const q = userQuestion.trim();
+    setUserQuestion('');
+    
+    // 내 질문 추가
+    setAiChat(prev => [...prev, { type: 'q', text: q }]);
+    
+    // 답변용 빈 버블 미리 추가
+    setAiChat(prev => [...prev, { type: 'a', text: '' }]);
+    setQaLoading(true);
+
+    try {
+      let fullAnswer = "";
+      // 현재까지의 대화 내역(aiChat)을 세 번째 인자로 전달
+      for await (const chunk of askAiAboutIngredientStream(item, q, aiChat)) {
+        fullAnswer += chunk;
+        setAiChat(prev => {
+          const newList = [...prev];
+          newList[newList.length - 1] = { type: 'a', text: fullAnswer };
+          return newList;
+        });
+      }
+    } catch (error) {
+      setAiChat(prev => [...prev, { type: 'a', text: "답변을 가져오는 중 오류가 발생했습니다." }]);
+    } finally {
+      setQaLoading(false);
+    }
+  };
+
   const hasNatlRegl = item.regType || item.regName || item.regNote;
 
   return (
-    <div className="detail-overlay show" onClick={e => e.target===e.currentTarget && onClose()}>
+    <div className="detail-overlay show">
       <div className="detail-modal" style={modalStyle}>
         <div className="detail-modal-header">
           <span className="detail-modal-title">
@@ -22,6 +64,49 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
           </button>
         </div>
         <div className="detail-modal-body">
+
+          {/* AI 연구 보조원 섹션 */}
+          <div className="detail-section ai-section">
+            <div className="section-title ai-title">
+              <span className="google-symbols filled">auto_awesome</span> 
+              AI 연구 보조원 (Gemini)
+            </div>
+            <div className="ai-content">
+              {aiChat.length === 0 && (
+                <div className="ai-welcome-box">
+                  <p className="ai-summary-text" style={{margin:0, color: 'var(--text-secondary)'}}>
+                    💡 이 성분에 대해 궁금한 점을 편하게 질문해 보세요. (예: 제형 특징, 대체 원료, 사용량 등)
+                  </p>
+                </div>
+              )}
+
+              <div className="ai-chat-area">
+                {aiChat.map((chat, i) => (
+                  <div key={i} className={`chat-bubble ${chat.type}`}>
+                    {chat.text}
+                  </div>
+                ))}
+                {qaLoading && (
+                  <div className="chat-bubble a loading">
+                    <span className="google-symbols status-loading">sync</span> 답변 생각 중...
+                  </div>
+                )}
+              </div>
+
+              <form className="ai-ask-form" onSubmit={handleAskAi}>
+                <input 
+                  type="text" 
+                  placeholder="이 성분에 대해 더 궁금한 점을 물어보세요..." 
+                  value={userQuestion}
+                  onChange={(e) => setUserQuestion(e.target.value)}
+                  disabled={qaLoading}
+                />
+                <button type="submit" disabled={qaLoading || !userQuestion.trim()}>
+                  <span className="google-symbols">send</span>
+                </button>
+              </form>
+            </div>
+          </div>
 
           {/* 기본 정보 */}
           <div className="detail-section">

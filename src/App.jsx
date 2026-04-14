@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { loadAllData } from './utils/sheetLoader';
 import SearchBar from './components/SearchBar';
 import ResultList from './components/ResultList';
 import DetailModal from './components/DetailModal';
@@ -7,7 +6,14 @@ import CosIngModal from './components/CosIngModal';
 import JapanModal from './components/JapanModal';
 import MatModal from './components/MatModal';
 import TopTen from './components/TopTen';
-import { trackIngredientView } from './utils/firebase';
+import { 
+  searchIngredients, 
+  getRegulatoryInfo, 
+  updateIngredientView,
+  getCosIngInfo,
+  getJapanInfo,
+  getMaterialInfo
+} from './utils/supabaseLoader';
 import './App.css';
 
 export default function App() {
@@ -17,6 +23,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [searchMode, setSearchMode] = useState('ing'); // 'ing' or 'mat'
   
   // Modals state
   const [cosIngTarget, setCosIngTarget] = useState(null);
@@ -41,51 +48,87 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadAllData(setProgress)
-      .then(d => { setData(d); setStatus('ready'); })
-      .catch(e => { setStatus('error'); setProgress(e.message); });
+    // Supabase 환경에서는 더 이상 초기 로딩을 기다릴 필요가 없습니다.
+    // 바로 'ready' 상태로 진입합니다.
+    setStatus('ready');
   }, []);
 
+  // 디바운싱 된 검색 로직 (Supabase 쿼리)
   useEffect(() => {
-    if (!data || !query.trim()) { setResults([]); return; }
-    const kw = query.trim().toLowerCase();
-    
-    // 1. 결과 분류용 배열
-    const exactMatches = [];
-    const startsWithMatches = [];
-    const containsMatches = [];
-
-    for (const item of data.index) {
-      const korLower = item.kor.toLowerCase();
-      const engLower = item.eng.toLowerCase();
-      const oldLower = item.old.toLowerCase();
-
-      if (korLower === kw || engLower === kw) {
-        exactMatches.push(item);
-      } else if (korLower.startsWith(kw) || engLower.startsWith(kw)) {
-        startsWithMatches.push(item);
-      } else if (korLower.includes(kw) || engLower.includes(kw) || oldLower.includes(kw)) {
-        containsMatches.push(item);
-      }
-      
-      if (exactMatches.length + startsWithMatches.length + containsMatches.length >= 250) break;
+    if (!query.trim()) {
+      setResults([]);
+      return;
     }
+
+    const timer = setTimeout(async () => {
+      const dbResults = await searchIngredients(query.trim());
+      // 기존 UI와 매칭되는 프로퍼티로 변환
+      const formatted = dbResults.map(item => ({
+        kor: item.kor_name,
+        eng: item.eng_name,
+        old: item.old_name,
+        function: item.function,
+        cas: item.cas_no,
+        ec: item.ec_no,
+        unii: item.unii,
+        origin: item.origin,
+        formula: item.formula,
+        regType: item.reg_type,
+        regName: item.reg_name,
+        regNote: item.reg_note,
+        history: item.history,
+        ewg: item.ewg,
+        ewgData: item.ewg_data,
+        type: 'ingredient'
+      }));
+      setResults(formatted);
+    }, 150); // 150ms 대기 후 검색 (서버 부하 방지)
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleSelect = async (item) => {
+    if (!item) { setSelected(null); return; }
     
-    // 우선순위에 따라 합치기
-    setResults([...exactMatches, ...startsWithMatches, ...containsMatches]);
-  }, [query, data]);
+    if (item.type === 'material') {
+      setMatTarget(item);
+    } else {
+      // 상세 정보 보기 시점에 모든 추가 데이터를 병렬로 즉시 가져옵니다. (고속 로딩)
+      const [regl, cosing, japan, materials] = await Promise.all([
+        getRegulatoryInfo(item.kor),
+        getCosIngInfo(item.eng),
+        getJapanInfo(item.kor),
+        getMaterialInfo(item.kor)
+      ]);
 
-  const openCosIng = useCallback((inciName) => {
-    if (!inciName || inciName === '-' || !data) return;
-    const d = data.cosingMap[inciName.trim().toUpperCase()];
-    setCosIngTarget(d || false);
-  }, [data]);
+      setSelected({ 
+        ...item, 
+        regulatoryRows: regl,
+        cosingData: cosing,
+        japanData: japan,
+        materialRows: materials
+      });
+      
+      updateIngredientView(item.kor);
+    }
+  };
 
-  const openJapan = useCallback((jpName) => {
-    if (!jpName || jpName === '-' || !data) return;
-    const d = data.japanMap[jpName.trim()];
-    setJapanTarget(d || false);
-  }, [data]);
+  const openCosIng = () => {
+    if (selected && selected.cosingData) {
+      setCosIngTarget({ ...selected, cosingInfo: selected.cosingData });
+    } else {
+      // 데이터가 없는 경우를 대비한 대체 처리도 가능
+      setCosIngTarget({ ...selected, cosingInfo: null });
+    }
+  };
+
+  const openJapan = () => {
+    if (selected && selected.japanData) {
+      setJapanTarget({ ...selected, japanInfo: selected.japanData });
+    } else {
+      setJapanTarget({ ...selected, japanInfo: null });
+    }
+  };
 
   const getReglRows = useCallback((kor) => {
     if (!data || !kor) return [];
@@ -94,7 +137,34 @@ export default function App() {
 
   const getMatRows = useCallback((kor) => {
     if (!data || !kor) return [];
-    return data.matMap[kor] || [];
+    const rows = [...(data.matMap[kor] || [])];
+    
+    // UI 배지 로직과 동일하게 혼합/단일 여부 계산
+    const checkMixed = (comp) => comp && (comp.includes(';') || comp.includes(','));
+    const getCount = (comp) => {
+      if (!comp) return 0;
+      return comp.split(/[;,]/).filter(s => s.trim()).length;
+    };
+
+    rows.sort((a, b) => {
+      const isMixedA = checkMixed(a.composition);
+      const isMixedB = checkMixed(b.composition);
+
+      // 1순위: 단일원료가 무조건 위로 (isMixed가 false인 쪽이 위로)
+      if (isMixedA !== isMixedB) {
+        return isMixedA ? 1 : -1;
+      }
+
+      // 2순위: 성분 개수가 적은 순
+      const countA = getCount(a.composition);
+      const countB = getCount(b.composition);
+      if (countA !== countB) return countA - countB;
+
+      // 3순위: 제품명 가나다순
+      return (a.productName || '').localeCompare(b.productName || '');
+    });
+    
+    return rows;
   }, [data]);
 
   const handleIngredientClick = useCallback((ingName) => {
@@ -145,9 +215,31 @@ export default function App() {
 
           <SearchBar value={query} onChange={setQuery} disabled={status !== 'ready'} />
           
+          <div className="search-mode-toggle">
+            <button 
+              className={`mode-btn ${searchMode === 'ing' ? 'active' : ''}`}
+              onClick={() => { setSearchMode('ing'); setResults([]); }}
+            >
+              <span className="google-symbols">science</span>
+              성분 검색
+            </button>
+            <button 
+              className={`mode-btn ${searchMode === 'mat' ? 'active' : ''}`}
+              onClick={() => { setSearchMode('mat'); setResults([]); }}
+            >
+              <span className="google-symbols">inventory_2</span>
+              원료 검색
+            </button>
+          </div>
+
           <div className="status-bar">
             {status === 'loading' && <><span className="google-symbols status-loading">sync</span> <span>{progress}</span></>}
-            {status === 'ready' && !query && <><span className="google-symbols status-ready">check_circle</span> <span>{data.index.length.toLocaleString()}개 성분 로드 완료</span></>}
+            {status === 'ready' && !query && (
+              <>
+                <span className="google-symbols status-ready">check_circle</span> 
+                <span>실시간 데이터베이스 연결됨</span>
+              </>
+            )}
             {status === 'ready' && query && results.length > 0 && <><span className="google-symbols status-count">list</span> <span>총 {results.length}건</span></>}
             {status === 'ready' && query && results.length === 0 && <><span className="google-symbols status-empty">info</span> <span>검색 결과가 없습니다.</span></>}
             {status === 'error' && <><span className="google-symbols status-error">error</span> <span>로드 실패: {progress}</span></>}
@@ -155,25 +247,21 @@ export default function App() {
         </div>
 
         {results.length > 0 && (
-          <ResultList results={results} selected={selected} onSelect={(item) => {
-            setSelected(item);
-            if(item) trackIngredientView(item.kor); // 조회수 증가 요청
-          }} />
+          <ResultList results={results} selected={selected} onSelect={handleSelect} />
         )}
 
-        {isHeroMode && process.env.REACT_APP_SHOW_MAT !== 'false' && (
-          <TopTen data={data} onSelect={(item) => {
-            setSelected(item);
-            if(item) trackIngredientView(item.kor);
-          }} />
+        {process.env.REACT_APP_SHOW_MAT !== 'false' && (
+          <TopTen data={data} onSelect={handleSelect} />
         )}
       </div>
 
       {selected && (
         <DetailModal
           item={selected}
-          reglRows={getReglRows(selected.kor)}
-          matRows={getMatRows(selected.kor)}
+          reglRows={selected.regulatoryRows || []}
+          matRows={selected.materialRows || []}
+          cosingData={selected.cosingData}
+          japanData={selected.japanData}
           onClose={() => setSelected(null)}
           onOpenCosIng={openCosIng}
           onOpenJapan={openJapan}
