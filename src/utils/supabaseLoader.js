@@ -53,7 +53,15 @@ export const getRegulatoryInfo = async (korName) => {
         console.error('Error fetching regulatory info:', error);
         return [];
     }
-    return data;
+    
+    // UI 프로퍼티에 맞게 필드명 변환 (snake_case -> camelCase)
+    return data.map(r => ({
+        regType: r.reg_type,
+        noticeName: r.notice_name,
+        provis: r.provis,
+        limitCond: r.limit_cond,
+        country: r.country
+    }));
 };
 
 // 유럽 상세 정보 (CosIng) 가져오기
@@ -66,7 +74,23 @@ export const getCosIngInfo = async (inciName) => {
         .limit(1)
         .single();
     if (error) return null;
-    return data;
+    
+    // UI에 맞는 필드로 변환
+    return {
+        ...data,
+        engNameOrig: data.eng_name_orig,
+        mathingInci: data.matching_inci,
+        cosingRefNo: data.cosing_ref_no,
+        inciName: data.inci_name,
+        innName: data.inn_name,
+        phEurName: data.ph_eur_name,
+        casNo: data.cas_no,
+        ecNo: data.ec_no,
+        chemIupacName: data.chem_iupac_name,
+        otherRestrictions: data.other_restrictions,
+        annexNo: data.annex_no,
+        updateDate: data.update_date
+    };
 };
 
 // 일본 상세 정보 가져오기
@@ -78,7 +102,20 @@ export const getJapanInfo = async (korName) => {
         .limit(1)
         .single();
     if (error) return null;
-    return data;
+    
+    // UI에 맞는 필드로 변환
+    return {
+        ...data,
+        engNameOrig: data.eng_name_orig,
+        mathingInci: data.matching_inci,
+        jpNo: data.jp_no,
+        jpName: data.jp_name,
+        inciName: data.inci_name,
+        regClass: data.reg_class,
+        casRn: data.cas_rn,
+        organicVal: data.organic_val,
+        inorganicVal: data.inorganic_val
+    };
 };
 
 // 관련 원료 정보 가져오기
@@ -88,7 +125,15 @@ export const getMaterialInfo = async (korName) => {
         .select('*')
         .eq('ingredient_name', korName);
     if (error) return [];
-    return data;
+    
+    // UI에 맞는 필드로 변환
+    return data.map(m => ({
+        productName: m.coos_kor_name || m.ingredient_name,
+        supplier: m.coos_status || '정보없음', 
+        maker: m.coos_type,
+        composition: m.coos_structure,
+        status: m.coos_status
+    }));
 };
 
 // 인기 성분 순위 업데이트...
