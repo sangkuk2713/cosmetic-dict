@@ -101,12 +101,34 @@ export default function App() {
         getMaterialInfo(item.kor)
       ]);
 
+      // 원료 정렬 로직 적용 (단일원료 우선 > 성분개수 적은순 > 제품명 가나다순)
+      const sortedMaterials = [...materials].sort((a, b) => {
+        const checkMixed = (comp) => comp && (comp.includes(';') || comp.includes(','));
+        const getCount = (comp) => comp ? comp.split(/[;,]/).filter(s => s.trim()).length : 0;
+
+        // DB 필드명(coos_structure) 또는 UI 필드명(composition) 대응
+        const compA = a.coos_structure || a.composition || '';
+        const compB = b.coos_structure || b.composition || '';
+        
+        const isMixedA = checkMixed(compA);
+        const isMixedB = checkMixed(compB);
+
+        if (isMixedA !== isMixedB) return isMixedA ? 1 : -1;
+        const countA = getCount(compA);
+        const countB = getCount(compB);
+        if (countA !== countB) return countA - countB;
+        
+        const nameA = a.productName || a.ingredient_name || '';
+        const nameB = b.productName || b.ingredient_name || '';
+        return nameA.localeCompare(nameB);
+      });
+
       setSelected({ 
         ...item, 
         regulatoryRows: regl,
         cosingData: cosing,
         japanData: japan,
-        materialRows: materials
+        materialRows: sortedMaterials
       });
       
       updateIngredientView(item.kor);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InfoTable, { InfoRowIf, InfoRowMulti, InfoRowLinks, InfoRowInline } from './InfoTable';
-import { getIngredientSummary, askAiAboutIngredientStream } from '../utils/gemini';
+import { getIngredientSummaryStream, askAiAboutIngredientStream } from '../utils/gemini';
 
 export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCosIng, onOpenJapan, onOpenMat }) {
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -14,6 +14,22 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
   useEffect(() => {
     if (item) {
       setAiChat([]);
+      // 창이 열릴 때 자동으로 성분 요약을 시작합니다.
+      const fetchSummary = async () => {
+        setQaLoading(true);
+        try {
+          let fullAnswer = "";
+          for await (const chunk of getIngredientSummaryStream(item)) {
+            fullAnswer += chunk;
+            setAiChat([{ type: 'a', text: fullAnswer }]);
+          }
+        } catch (e) {
+          console.error("AI 요약 실패:", e);
+        } finally {
+          setQaLoading(false);
+        }
+      };
+      fetchSummary();
     }
   }, [item]);
 
@@ -52,8 +68,11 @@ export default function DetailModal({ item, reglRows, matRows, onClose, onOpenCo
   const hasNatlRegl = item.regType || item.regName || item.regNote;
 
   return (
-    <div className="detail-overlay show">
-      <div className="detail-modal" style={modalStyle}>
+    <div className="detail-overlay show" onMouseDown={(e) => {
+      // 배경(overlay) 자체를 클릭했을 때만 무시하거나 닫힘 방지 로직 적용
+      // 만약 닫고 싶다면 여기서 체크 가능하지만, 현재는 방지가 목표이므로 아무것도 안 함.
+    }}>
+      <div className="detail-modal" style={modalStyle} onMouseDown={(e) => e.stopPropagation()}>
         <div className="detail-modal-header">
           <span className="detail-modal-title">
             <span className="google-symbols filled">info</span>
